@@ -486,6 +486,19 @@ class ChatLogic extends GetxController {
     final double videoWidth = controller.value.size.width;
     final double videoHeight = controller.value.size.height;
 
+    double width = 0.5.sw;
+    double height = 0.25.sh;
+    double actualWidth = videoWidth;
+    double actualHeight = videoHeight;
+    double scale = 1.0;
+    if (actualWidth > width || actualHeight > height) {
+      double widthScale = width / actualWidth;
+      double heightScale = height / actualHeight;
+      scale = widthScale < heightScale ? widthScale : heightScale;
+    }
+    width = actualWidth * scale;
+    height = actualHeight * scale;
+
     print('Video width: $videoWidth');
     print('Video height: $videoHeight');
    
@@ -493,8 +506,8 @@ class ChatLogic extends GetxController {
     final fileSizeInMB = fileSize / (1024 * 1024);
 
     print('File size: $fileSizeInMB MB');
-    imageWidth = videoWidth;
-    imageHeight = videoHeight;
+    imageWidth = width;
+    imageHeight = height;
     if (kDebugMode) {
       print("imageWidth:$imageWidth");
       print("imageHeight:$imageHeight");

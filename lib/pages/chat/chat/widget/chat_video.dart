@@ -26,49 +26,95 @@ class ChatVideoView extends StatefulWidget {
 
 class _ChatVideoViewState extends State<ChatVideoView> {
   late VideoPlayerController _controller;
-  late StreamSubscription _msgProgressSubscription;
+  late Future<void> _initializeVideoPlayerFuture;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {}); // 视频初始化后刷新界面
-      });
 
-    // 监听消息发送进度的变化
-    _msgProgressSubscription = widget.msgProgressControllerStream.listen((progress) {
-      // 这里可以根据进度来更新UI，比如显示一个进度条
-      // 注意检查setState是否在dispose之后调用，这可能导致错误
-      if (mounted) {
-        setState(() {
-          // 更新进度相关UI
-        });
-      }
-    });
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(
+        widget.videoUrl,
+      ),
+    );
 
-    _controller.setLooping(true); // 根据需要设置循环播放
+    // Initialize the controller and store the Future for later use.
+    _initializeVideoPlayerFuture = _controller.initialize();
+
+    _controller.setLooping(false); // 根据需要设置循环播放
+    // 增加播放按钮 点击播放
+    
   }
 
   @override
   void dispose() {
     _controller.dispose(); // 释放视频控制器资源
-    _msgProgressSubscription.cancel(); // 取消进度监听
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    
-    return Container(
+     return Container(
       width: widget.videoWidth,
       height: widget.videoHeight,
-      child: _controller.value.isInitialized
-          ? AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              child: VideoPlayer(_controller),
+      // 添加一个 底部容器，增加两个button
+      child: Stack(
+        children: [
+          FutureBuilder(
+            future: _initializeVideoPlayerFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                // 如果视频初始化完成，显示视频
+                return AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: VideoPlayer(_controller),
+                );
+              } else {
+                // 如果视频尚未初始化完成，显示一个加载中的图标
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            // 半透明背景
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              height: 40,
+              child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.play_arrow),
+                  onPressed: () {
+                    setState(() {
+                      if (_controller.value.isPlaying) {
+                        _controller.pause();
+                      } else {
+                        _controller.play();
+                      }
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.stop),
+                  onPressed: () {
+                    setState(() {
+                      _controller.pause();
+                      _controller.seekTo(Duration.zero);
+                    });
+                  },
+                ),
+              ],
             )
-          : Center(child: CircularProgressIndicator()), // 加载时显示进度条
+            ),
+          ),
+        ],
+      ),
+      
+
     );
   }
 }
